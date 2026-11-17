@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UWED Moodle</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5fa; --surface: #ffffff; --surface-2: #eef0f6; --text: #0e1220; --muted: #6b7185;
+    --line: rgba(14, 18, 32, .08); --accent: #f97316; --accent-2: #ea580c; --on-accent: #fff;
+    --good: #10b981; --good-bg: rgba(16, 185, 129, .12); --warn: #f59e0b; --warn-bg: rgba(245, 158, 11, .14);
+    --bad: #ef4444; --bad-bg: rgba(239, 68, 68, .12);
+    --shadow: 0 1px 2px rgba(14, 18, 32, .04), 0 8px 24px -12px rgba(14, 18, 32, .18); --radius: 18px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0b0d14; --surface: #151824; --surface-2: #1d2130; --text: #eef0f8; --muted: #8b91a7;
+    --line: rgba(255, 255, 255, .08); --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .7);
+  } }
+  :root[data-theme="dark"] {
+    --bg: #0b0d14; --surface: #151824; --surface-2: #1d2130; --text: #eef0f8; --muted: #8b91a7;
+    --line: rgba(255, 255, 255, .08); --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -14px rgba(0, 0, 0, .7);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  button, input { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  main { max-width: 640px; margin: 0 auto; padding: 14px 16px calc(28px + env(safe-area-inset-bottom)); }
+
+  /* sign-in */
+  .login { min-height: calc(100vh - 28px); display: flex; flex-direction: column; justify-content: center; padding: 10px 0 30px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin: 0 4px 22px; }
+  .logo { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 20px;
+    color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 10px 24px -10px var(--accent); }
+  .brand b { display: block; font-size: 19px; }
+  .brand small { color: var(--muted); font-size: 12.5px; line-height: 1.3; display: block; }
+  .card { background: var(--surface); border-radius: 22px; padding: 22px 18px; box-shadow: var(--shadow); }
+  .card h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+  .card p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  label.f { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 2px 6px; }
+  .input { display: flex; align-items: center; background: var(--surface-2); border-radius: 14px; border: 1.5px solid transparent; transition: border .15s; }
+  .input:focus-within { border-color: var(--accent); }
+  .input input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 13px 14px; font-size: 16px; }
+  .input button { border: 0; background: none; color: var(--muted); padding: 0 14px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn { width: 100%; border: 0; border-radius: 14px; padding: 14px; font-weight: 700; cursor: pointer; margin-top: 18px; font-size: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); transition: transform .15s, opacity .2s; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .55; }
+  .btn.ghost { background: var(--surface-2); color: var(--text); margin-top: 10px; font-weight: 600; }
+  .err { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 1em; }
+  .note { margin-top: 16px; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; line-height: 1.45; }
+  .ok { text-align: center; padding: 40px 10px; }
+  .ok .tick { width: 72px; height: 72px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 34px;
+    background: var(--good-bg); color: var(--good); }
+
+  /* dashboard */
+  .hero { position: relative; overflow: hidden; border-radius: 24px; padding: 18px; color: #fff;
+    background: radial-gradient(120% 140% at 100% 0%, #fb923c 0%, transparent 55%), linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+    box-shadow: 0 18px 40px -20px #f97316; }
+  .hero::after { content: ""; position: absolute; right: -40px; bottom: -60px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.09); }
+  .hero-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; opacity: .92; position: relative; z-index: 1; gap: 8px; }
+  .hero-top span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { flex: none; background: rgba(255,255,255,.18); padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 12px; }
+  .hero h3 { margin: 10px 0 4px; font-size: 20px; line-height: 1.25; position: relative; z-index: 1; overflow-wrap: anywhere; }
+  .hero .line { font-size: 14px; opacity: .92; position: relative; z-index: 1; }
+  .banner { margin-top: 12px; background: var(--surface); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+  .banner button { margin-left: auto; flex: none; border: 0; border-radius: 10px; padding: 8px 12px; font-weight: 700; cursor: pointer;
+    background: var(--accent); color: #fff; }
+  main.dash { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-top: 1px solid var(--line); }
+  .tabbar > div { display: flex; width: 100%; max-width: 520px; gap: 2px; }
+  .tab { flex: 1; min-width: 0; border: 0; background: transparent; border-radius: 12px; padding: 7px 2px 6px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: 11px; font-weight: 600; }
+  .tab i { font-style: normal; font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .7; transition: all .2s; }
+  .tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab.on { color: var(--accent); }
+  .tab.on i { filter: none; opacity: 1; transform: translateY(-1px); }
+  .chips { display: flex; gap: 6px; margin-top: 16px; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-size: 13.5px;
+    font-weight: 600; cursor: pointer; color: var(--text); display: inline-flex; gap: 6px; align-items: center; }
+  .chip em { font-style: normal; font-size: 12px; color: var(--muted); font-weight: 700; }
+  .chip.on { border-color: transparent; background: var(--text); color: var(--bg); }
+  .chip.on em { color: inherit; opacity: .7; }
+  .item.course { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; border: 0; cursor: pointer; }
+  .thumb { flex: none; width: 54px; height: 54px; border-radius: 14px; background: var(--surface-2) center / cover no-repeat;
+    display: grid; place-items: center; font-weight: 800; font-size: 18px; color: #fff; }
+  .prog { height: 5px; border-radius: 99px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
+  .prog > div { height: 100%; border-radius: 99px; background: var(--good); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; vertical-align: 2px; }
+  .linkbtn { display: block; text-align: center; margin-top: 4px; padding: 12px; border-radius: 14px; background: var(--surface-2); color: var(--text);
+    font-weight: 600; text-decoration: none; }
+  .list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .item { background: var(--surface); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); display: block; color: inherit; text-decoration: none; }
+  .item-top { display: flex; gap: 10px; align-items: flex-start; }
+  .item b { display: block; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+  .item .sub { color: var(--muted); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+  .item .grow { flex: 1; min-width: 0; }
+  .badge { flex: none; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .badge.good { color: var(--good); background: var(--good-bg); } .badge.warn { color: var(--warn); background: var(--warn-bg); }
+  .badge.bad { color: var(--bad); background: var(--bad-bg); } .badge.gray { color: var(--muted); background: var(--surface-2); }
+  .grade { flex: none; font-weight: 800; font-size: 17px; color: var(--accent); }
+  .msg { color: var(--muted); font-size: 13.5px; margin-top: 6px; overflow-wrap: anywhere; }
+  .day-h { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 10px 4px 0; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 16px; }
+  .empty div { font-size: 38px; margin-bottom: 8px; }
+  .skel { height: 74px; border-radius: var(--radius); background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+    background-size: 200% 100%; animation: sh 1.2s infinite; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  .back { border: 0; background: none; color: var(--accent); font-weight: 700; padding: 6px 2px; cursor: pointer; margin-top: 10px; }
+  footer { text-align: center; margin-top: 22px; }
+  footer button { border: 0; background: none; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<main>
+  <!-- sign in -->
+  <section class="login" id="v-login" hidden>
+    <div class="brand"><div class="logo">M</div><div><b>UWED Moodle</b><small id="l-site"></small></div></div>
+    <form class="card" id="form" autocomplete="on">
+      <h1 id="l-title"></h1>
+      <p id="l-sub"></p>
+      <label class="f" for="u" id="l-user"></label>
+      <div class="input"><input id="u" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+      <label class="f" for="p" id="l-pass"></label>
+      <div class="input"><input id="p" name="password" type="password" autocomplete="current-password" required><button type="button" id="show"></button></div>
+      <div class="err" id="err"></div>
+      <button class="btn" id="go" type="submit"></button>
+      <div class="note">🔒 <span id="l-priv"></span></div>
+    </form>
+  </section>
+
+  <!-- signed in, handing over to the bot -->
+  <section class="ok" id="v-ok" hidden>
+    <div class="tick">✓</div>
+    <h2 id="ok-title" style="margin:0 0 6px"></h2>
+    <div id="ok-sub" style="color:var(--muted)"></div>
+  </section>
+
+  <!-- dashboard -->
+  <section id="v-dash" hidden>
+    <div class="hero">
+      <div class="hero-top"><span id="d-name"></span><span class="pill" id="d-pill"></span></div>
+      <h3 id="d-next"></h3>
+      <div class="line" id="d-line"></div>
+    </div>
+    <div class="banner" id="notify" hidden><span>🔔</span><span id="n-text"></span><button id="n-btn"></button></div>
+    <div class="chips" id="filters" hidden></div>
+    <div class="list" id="list"></div>
+    <footer><button id="logout"></button></footer>
+  </section>
+</main>
+<nav class="tabbar" id="tabbar" hidden><div id="tabs">
+  <button class="tab on" data-t="due"><i>⏰</i><span></span></button>
+  <button class="tab" data-t="subjects"><i>📚</i><span></span></button>
+  <button class="tab" data-t="grades"><i>📝</i><span></span></button>
+  <button class="tab" data-t="news"><i>🔔</i><span></span></button>
+</div></nav>
+<script>
+const SITE = "https://moodle.uwed.uz";
+const TG = window.Telegram && Telegram.WebApp;
+const inTG = !!(TG && TG.platform && TG.platform !== "unknown");
+if (inTG) {
+  TG.ready(); TG.expand();
+  const theme = () => {
+    document.documentElement.dataset.theme = TG.colorScheme === "dark" ? "dark" : "light";
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    try { TG.setHeaderColor(bg); TG.setBackgroundColor(bg); } catch (e) {}
+  };
+  theme(); TG.onEvent("themeChanged", theme);
+}
+
+const I18N = {
+  en: { subjects: "Subjects", current: "Current", hiddenC: "Hidden", allC: "All", noSubjects: "No subjects here.", done: "complete", openM: "Open in Moodle", hiddenTag: "hidden", noGradesHere: "No grades in this group yet.",
+        site: "Electronic learning system", title: "Sign in", sub: "Use your Moodle username and password.", user: "Username", pass: "Password",
+        show: "Show", hide: "Hide", go: "Sign in", going: "Signing in…",
+        priv: "Your password goes straight from this phone to moodle.uwed.uz — the bot never sees it. The bot only gets Moodle's access key, to send you deadlines and grades.",
+        wrong: "Wrong username or password.", net: "Couldn't reach Moodle. Check your connection and try again.",
+        okTitle: "Signed in", okSub: "Turning on notifications in the bot…",
+        due: "Deadlines", grades: "Grades", news: "Notifications", next: "Next deadline", none: "No deadlines in the next 30 days 🎉",
+        left: (d, h, m) => d ? `${d} d ${h} h left` : h ? `${h} h ${m} min left` : `${m} min left`, overdue: "overdue",
+        noGrades: "No grades yet.", noNews: "No notifications yet.", course: "Course total", back: "‹ All courses", items: "graded items",
+        notifyText: "Get deadlines and grades in Telegram", notifyBtn: "Turn on", notifyFromBot: "Open this from the 📚 Moodle button in the bot to turn on Telegram notifications.",
+        logout: "Sign out", loggedOut: "Signed out", failed: "Couldn't load from Moodle. Pull down to try again.",
+        today: "Today", tomorrow: "Tomorrow", days: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], open: "Open" },
+  ru: { subjects: "Предметы", current: "Текущие", hiddenC: "Скрытые", allC: "Все", noSubjects: "Здесь нет предметов.", done: "выполнено", openM: "Открыть в Moodle", hiddenTag: "скрыт", noGradesHere: "В этой группе пока нет оценок.",
+        site: "Система электронного обучения", title: "Вход", sub: "Используйте логин и пароль Moodle.", user: "Логин", pass: "Пароль",
+        show: "Показать", hide: "Скрыть", go: "Войти", going: "Вход…",
+        priv: "Пароль отправляется с этого телефона прямо на moodle.uwed.uz — бот его не видит. Бот получает только ключ доступа Moodle, чтобы присылать дедлайны и оценки.",
+        wrong: "Неверный логин или пароль.", net: "Не удалось связаться с Moodle. Проверьте подключение.",
+        okTitle: "Вход выполнен", okSub: "Включаю уведомления в боте…",
+        due: "Дедлайны", grades: "Оценки", news: "Уведомления", next: "Ближайший дедлайн", none: "В ближайшие 30 дней дедлайнов нет 🎉",
+        left: (d, h, m) => d ? `осталось ${d} д ${h} ч` : h ? `осталось ${h} ч ${m} мин` : `осталось ${m} мин`, overdue: "просрочено",
+        noGrades: "Оценок пока нет.", noNews: "Уведомлений пока нет.", course: "Итог по курсу", back: "‹ Все курсы", items: "оценённых работ",
+        notifyText: "Получать дедлайны и оценки в Telegram", notifyBtn: "Включить", notifyFromBot: "Откройте это через кнопку 📚 Moodle в боте, чтобы включить уведомления в Telegram.",
+        logout: "Выйти", loggedOut: "Вы вышли", failed: "Не удалось загрузить данные Moodle. Потяните вниз, чтобы повторить.",
+        today: "Сегодня", tomorrow: "Завтра", days: ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"], open: "Открыть" },
+  uz: { subjects: "Fanlar", current: "Joriy", hiddenC: "Yashirin", allC: "Hammasi", noSubjects: "Bu yerda fanlar yoʻq.", done: "bajarildi", openM: "Moodle'da ochish", hiddenTag: "yashirin", noGradesHere: "Bu guruhda hozircha baholar yoʻq.",
+        site: "Elektron taʼlim tizimi", title: "Kirish", sub: "Moodle login va parolingizdan foydalaning.", user: "Login", pass: "Parol",
+        show: "Koʻrsatish", hide: "Yashirish", go: "Kirish", going: "Kirilmoqda…",
+        priv: "Parol shu telefondan toʻgʻridan-toʻgʻri moodle.uwed.uz ga yuboriladi — bot uni koʻrmaydi. Bot faqat muddat va baholarni yuborish uchun Moodle kirish kalitini oladi.",
+        wrong: "Login yoki parol notoʻgʻri.", net: "Moodle bilan bogʻlanib boʻlmadi. Internetni tekshiring.",
+        okTitle: "Kirildi", okSub: "Botda bildirishnomalar yoqilmoqda…",
+        due: "Muddatlar", grades: "Baholar", news: "Xabarlar", next: "Eng yaqin muddat", none: "Keyingi 30 kunda muddatlar yoʻq 🎉",
+        left: (d, h, m) => d ? `${d} kun ${h} soat qoldi` : h ? `${h} soat ${m} daq qoldi` : `${m} daq qoldi`, overdue: "muddati oʻtgan",
+        noGrades: "Hozircha baholar yoʻq.", noNews: "Hozircha xabarlar yoʻq.", course: "Kurs boʻyicha yakun", back: "‹ Barcha kurslar", items: "baholangan ish",
+        notifyText: "Muddat va baholarni Telegramda olish", notifyBtn: "Yoqish", notifyFromBot: "Telegram bildirishnomalarini yoqish uchun buni botdagi 📚 Moodle tugmasi orqali oching.",
+        logout: "Chiqish", loggedOut: "Chiqildi", failed: "Moodle maʼlumotlarini yuklab boʻlmadi. Qayta urinish uchun pastga torting.",
+        today: "Bugun", tomorrow: "Ertaga", days: ["Yak","Du","Se","Ch","Pa","Ju","Sha"], open: "Ochish" },
+};
+const qs = new URLSearchParams(location.search);
+const tgLang = TG && TG.initDataUnsafe && TG.initDataUnsafe.user && TG.initDataUnsafe.user.language_code;
+const L = I18N[qs.get("lang")] ? qs.get("lang") : I18N[tgLang] ? tgLang : "en";
+const T = I18N[L];
+document.documentElement.lang = L;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const strip = s => { const d = document.createElement("div"); d.innerHTML = String(s ?? ""); return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
+};
+const buzz = k => { try { TG.HapticFeedback.notificationOccurred(k); } catch (e) {} };
+const show = id => {
+  for (const v of ["v-login", "v-ok", "v-dash"]) $(v).hidden = v !== id;
+  $("tabbar").hidden = id !== "v-dash"; document.querySelector("main").classList.toggle("dash", id === "v-dash");
+  window.scrollTo(0, 0);
+};
+
+// ---------- Moodle API (straight from this phone; Moodle allows it) ----------
+function form(data) {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(data)) {
+    if (Array.isArray(v)) v.forEach((x, i) => p.append(`${k}[${i}]`, x)); else p.append(k, v);
+  }
+  return p;
+}
+async function getToken(username, password) {
+  const r = await fetch(`${SITE}/login/token.php`, { method: "POST", body: form({ username, password, service: "moodle_mobile_app" }) });
+  const j = await r.json();
+  if (!j.token) { const e = new Error(j.error || "login"); e.login = true; throw e; }
+  return j.token;
+}
+async function ws(fn, params = {}) {
+  const r = await fetch(`${SITE}/webservice/rest/server.php`, { method: "POST",
+    body: form({ wstoken: store.get("md_token"), wsfunction: fn, moodlewsrestformat: "json", ...params }) });
+  const j = await r.json();
+  if (j && j.exception) { const e = new Error(j.message || j.errorcode); e.code = j.errorcode; throw e; }
+  return j;
+}
+
+// ---------- sign in ----------
+for (const [id, k] of [["l-site", "site"], ["l-title", "title"], ["l-sub", "sub"], ["l-user", "user"], ["l-pass", "pass"], ["show", "show"],
+                       ["go", "go"], ["l-priv", "priv"], ["ok-title", "okTitle"], ["ok-sub", "okSub"], ["logout", "logout"], ["n-text", "notifyText"], ["n-btn", "notifyBtn"]])
+  $(id).textContent = T[k];
+document.querySelectorAll("#tabs button").forEach(b => b.querySelector("span").textContent = T[b.dataset.t]);
+$("show").onclick = () => { const p = $("p"); p.type = p.type === "password" ? "text" : "password"; $("show").textContent = p.type === "password" ? T.show : T.hide; };
+
+$("form").onsubmit = async e => {
+  e.preventDefault();
+  const u = $("u").value.trim(), p = $("p").value;
+  if (!u || !p) return;
+  $("go").disabled = true; $("go").textContent = T.going; $("err").textContent = "";
+  try {
+    const tok = await getToken(u, p);
+    store.set("md_token", tok);
+    const info = await ws("core_webservice_get_site_info");
+    store.set("md_user", JSON.stringify({ id: info.userid, name: strip(info.fullname) }));
+    $("p").value = "";
+    buzz("success");
+    handOver(tok);
+  } catch (err) {
+    buzz("error");
+    $("err").textContent = err.login ? T.wrong : T.net;
+    store.set("md_token", null);
+  } finally { $("go").disabled = false; $("go").textContent = T.go; }
+};
+
+// give the bot only the access key, so it can send deadlines/grades even when this app is closed
+function canSend() { return inTG && typeof TG.sendData === "function" && !(TG.initDataUnsafe && TG.initDataUnsafe.query_id); }
+function handOver(tok) {
+  if (canSend()) {
+    show("v-ok");
+    setTimeout(() => {
+      try { store.set("md_notify", "1"); TG.sendData(JSON.stringify({ moodle: "connect", token: tok })); }
+      catch (e) { store.set("md_notify", null); dashboard(); }
+    }, 900);
+  } else dashboard();
+}
+
+// ---------- dashboard ----------
+let TAB = "due", CACHE = {};
+function tkt(ts) { // Tashkent date/time parts
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent", hourCycle: "h23", weekday: "short",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(ts * 1000)).map(x => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}`, dm: `${+p.day}.${p.month}` };
+}
+function dayName(ts) {
+  const a = tkt(ts).date, now = tkt(Date.now() / 1000).date, tom = tkt(Date.now() / 1000 + 86400).date;
+  if (a === now) return T.today; if (a === tom) return T.tomorrow;
+  return `${T.days[new Date(a + "T12:00:00Z").getUTCDay()]} ${tkt(ts).dm}`;
+}
+function leftText(ts) {
+  let s = Math.floor(ts - Date.now() / 1000); if (s < 0) return [T.overdue, "bad"];
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return [T.left(d, h, m), s < 3 * 3600 ? "bad" : s < 86400 ? "warn" : "good"];
+}
+
+async function dashboard() {
+  show("v-dash");
+  const me = JSON.parse(store.get("md_user") || "{}");
+  $("d-name").textContent = me.name || "Moodle";
+  $("notify").hidden = store.get("md_notify") === "1";
+  $("n-btn").hidden = !canSend();
+  if (!canSend()) $("n-text").textContent = T.notifyFromBot;
+  render();
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  TAB = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  try { TG.HapticFeedback.selectionChanged(); } catch (e) {}
+  window.scrollTo(0, 0);
+  render();
+});
+$("n-btn").onclick = () => handOver(store.get("md_token"));
+$("logout").onclick = () => {
+  const wasOn = store.get("md_notify") === "1";
+  for (const k of ["md_token", "md_user", "md_notify"]) store.set(k, null);
+  CACHE = {};
+  if (wasOn && canSend()) { TG.sendData(JSON.stringify({ moodle: "disconnect" })); return; }
+  show("v-login");
+};
+
+async function load(key, fn) {
+  if (!CACHE[key]) CACHE[key] = fn().catch(e => { delete CACHE[key]; throw e; });
+  return CACHE[key];
+}
+const me = () => JSON.parse(store.get("md_user") || "{}");
+const getDue = () => load("due", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const j = await ws("core_calendar_get_action_events_by_timesort", { timesortfrom: now - 3600, timesortto: now + 30 * 86400, limitnum: 50, limittononsuspendedevents: 1 });
+  return (j.events || []).map(e => ({ name: strip(e.activityname || e.name), course: strip(e.course && e.course.fullname), time: e.timesort || e.timestart,
+    url: (e.action && e.action.url) || e.url, icon: e.icon && e.icon.component })).sort((a, b) => a.time - b.time);
+});
+// Moodle's groups: in progress ("Current"), hidden (courses you hid in Moodle), all (everything except hidden — like Moodle)
+const GROUPS = [["inprogress", "current"], ["hidden", "hiddenC"], ["all", "allC"]];
+let FILTER = { subjects: store.get("md_f_subjects") || "inprogress", grades: store.get("md_f_grades") || "inprogress" };
+const getGroup = g => load("grp:" + g, async () => {
+  const j = await ws("core_course_get_enrolled_courses_by_timeline_classification", { classification: g, limit: 0, offset: 0, sort: "fullname" });
+  return (j.courses || []).map(c => ({ id: c.id, name: strip(c.fullname), short: strip(c.shortname), cat: strip(c.coursecategory),
+    img: c.courseimage || "", progress: c.hasprogress ? Math.round(c.progress || 0) : null, hidden: !!c.hidden,
+    url: c.viewurl || `${SITE}/course/view.php?id=${c.id}`, start: c.startdate, end: c.enddate }));
+});
+const getTotals = () => load("totals", async () => {
+  const j = await ws("gradereport_overview_get_course_grades", { userid: me().id }).catch(() => ({ grades: [] }));
+  return Object.fromEntries((j.grades || []).map(x => [x.courseid, x.grade && x.grade !== "-" ? strip(x.grade) : ""]));
+});
+function imgUrl(u) {  // course pictures stored in Moodle need the access key; generated ones are plain data: URLs
+  if (!u) return "";
+  if (u.startsWith("data:")) return u;
+  if (u.includes("/pluginfile.php")) return u.replace("/pluginfile.php", "/webservice/pluginfile.php") + (u.includes("?") ? "&" : "?") + "token=" + store.get("md_token");
+  return u;
+}
+const COLORS = ["#6366f1", "#ec4899", "#14b8a6", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#0ea5e9"];
+const COUNTS = {};
+function renderFilters(kind) {
+  const box = $("filters"); box.hidden = false;
+  const draw = () => {
+    box.innerHTML = GROUPS.map(([g, label]) => `<button class="chip${FILTER[kind] === g ? " on" : ""}" data-g="${g}">${T[label]}` +
+      (COUNTS[g] != null ? ` <em>${COUNTS[g]}</em>` : "") + `</button>`).join("");
+    box.querySelectorAll("[data-g]").forEach(btn => btn.onclick = () => {
+      if (TAB !== "subjects" && TAB !== "grades") return;
+      FILTER[TAB] = btn.dataset.g; store.set("md_f_" + TAB, btn.dataset.g);
+      try { TG.HapticFeedback.selectionChanged(); } catch (e) {}
+      render();
+    });
+  };
+  draw();  // chips appear at once; counts fill in when the groups have loaded
+  Promise.all(GROUPS.map(([g]) => getGroup(g).then(x => { COUNTS[g] = x.length; }).catch(() => {})))
+    .then(() => { if (TAB === kind && !box.hidden) draw(); });
+}
+const getNews = () => load("news", async () => {
+  const j = await ws("message_popup_get_popup_notifications", { useridto: me().id, newestfirst: 1, limit: 30, offset: 0 });
+  return (j.notifications || []).map(n => ({ subject: strip(n.subject), text: strip(n.smallmessage || n.fullmessage), url: n.contexturl, time: n.timecreated }));
+});
+
+let FROM_SUBJECTS = false;
+function setTab() { document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === TAB)); }
+async function render(courseId, fromSubjects) {
+  if (courseId) FROM_SUBJECTS = !!fromSubjects;
+  const list = $("list");
+  list.innerHTML = `<div class="skel"></div><div class="skel"></div><div class="skel"></div>`;
+  try {
+    // hero always shows the next deadline
+    getDue().then(due => {
+      const n = due.find(d => d.time > Date.now() / 1000);
+      $("d-pill").textContent = `${due.length} · ${T.due}`;
+      $("d-next").textContent = n ? n.name : T.none;
+      $("d-line").textContent = n ? `${T.next} · ${dayName(n.time)} ${tkt(n.time).time} · ${leftText(n.time)[0]}` : "";
+    }).catch(() => {});
+
+    $("filters").hidden = !(TAB === "subjects" || (TAB === "grades" && !courseId));
+    if (!$("filters").hidden) renderFilters(TAB);
+    if (TAB === "subjects") {
+      const cs = await getGroup(FILTER.subjects);
+      if (!cs.length) { list.innerHTML = `<div class="empty"><div>📚</div>${T.noSubjects}</div>`; return; }
+      list.innerHTML = cs.map((c, i) => {
+        const img = imgUrl(c.img), col = COLORS[c.id % COLORS.length];
+        return `<button class="item course" data-c="${c.id}"><div class="thumb" style="${img ? `background-image:url('${esc(img)}')` : `background:${col}`}">${img ? "" : esc((c.name[0] || "?").toUpperCase())}</div>` +
+          `<div class="grow"><b>${esc(c.name)}${c.hidden ? `<span class="tag">${T.hiddenTag}</span>` : ""}</b>` +
+          `<div class="sub">${esc(c.cat || c.short)}</div>` +
+          (c.progress != null ? `<div class="prog"><div style="width:${c.progress}%"></div></div><div class="sub">${c.progress}% ${T.done}</div>` : "") +
+          `</div></button>`;
+      }).join("");
+      list.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { TAB = "grades"; setTab(); render(+b.dataset.c, true); });
+      return;
+    }
+    if (TAB === "due") {
+      const due = await getDue();
+      if (!due.length) { list.innerHTML = `<div class="empty"><div>🎉</div>${T.none}</div>`; return; }
+      let html = "", last = "";
+      for (const d of due) {
+        const day = dayName(d.time);
+        if (day !== last) { html += `<div class="day-h">${esc(day)}</div>`; last = day; }
+        const [lt, cls] = leftText(d.time);
+        html += `<a class="item" href="${esc(d.url)}" target="_blank" rel="noopener"><div class="item-top"><div class="grow"><b>${esc(d.name)}</b>` +
+                `<div class="sub">${esc(d.course)} · ${tkt(d.time).time}</div></div><span class="badge ${cls}">${esc(lt)}</span></div></a>`;
+      }
+      list.innerHTML = html;
+    } else if (TAB === "grades" && !courseId) {
+      const [grp, totals] = await Promise.all([getGroup(FILTER.grades), getTotals()]);
+      const cs = grp.map(c => ({ ...c, grade: totals[c.id] || "" })).sort((a, b) => (b.grade ? 1 : 0) - (a.grade ? 1 : 0) || a.name.localeCompare(b.name));
+      if (!cs.length) { list.innerHTML = `<div class="empty"><div>📝</div>${T.noGradesHere}</div>`; return; }
+      list.innerHTML = cs.map(c => `<button class="item" style="width:100%;text-align:left;border:0;cursor:pointer" data-c="${c.id}">` +
+        `<div class="item-top"><div class="grow"><b>${esc(c.name)}</b><div class="sub">${T.course}</div></div>` +
+        (c.grade ? `<span class="grade">${esc(c.grade)}</span>` : `<span class="badge gray">—</span>`) + `</div></button>`).join("");
+      list.querySelectorAll("[data-c]").forEach(b => b.onclick = () => render(+b.dataset.c));
+    } else if (TAB === "grades") {
+      const [all, hid, j] = await Promise.all([getGroup("all"), getGroup("hidden").catch(() => []),
+                                              ws("gradereport_user_get_grade_items", { courseid: courseId, userid: me().id })]);
+      const c = [...all, ...hid].find(x => x.id === courseId) || {};
+      const items = ((j.usergrades || [])[0] || {}).gradeitems || [];
+      const rows = items.filter(i => i.itemtype !== "course");
+      const total = items.find(i => i.itemtype === "course");
+      let html = `<button class="back" id="back">${T.back}</button><div class="item"><div class="item-top"><div class="grow"><b>${esc(c.name)}</b>` +
+                 `<div class="sub">${T.course}</div></div><span class="grade">${esc(strip(total && total.gradeformatted) || "—")}</span></div></div>`;
+      html += rows.map(i => { const g = strip(i.gradeformatted); const fb = strip(i.feedback);
+        return `<div class="item"><div class="item-top"><div class="grow"><b>${esc(strip(i.itemname) || "—")}</b>` +
+          `<div class="sub">${esc(strip(i.rangeformatted))}</div>${fb ? `<div class="msg">💬 ${esc(fb)}</div>` : ""}</div>` +
+          (g && g !== "-" ? `<span class="grade">${esc(g)}</span>` : `<span class="badge gray">—</span>`) + `</div></div>`; }).join("");
+      if (c.url) html += `<a class="linkbtn" href="${esc(c.url)}" target="_blank" rel="noopener">${T.openM} ↗</a>`;
+      list.innerHTML = html;
+      const goBack = () => { if (FROM_SUBJECTS) { TAB = "subjects"; setTab(); } render(); };
+      $("back").textContent = FROM_SUBJECTS ? `‹ ${T.subjects}` : T.back;
+      $("back").onclick = goBack;
+      if (inTG) { TG.BackButton.show(); TG.BackButton.onClick(function f() { TG.BackButton.offClick(f); TG.BackButton.hide(); goBack(); }); }
+    } else {
+      const ns = await getNews();
+      if (!ns.length) { list.innerHTML = `<div class="empty"><div>🔔</div>${T.noNews}</div>`; return; }
+      list.innerHTML = ns.map(n => `<a class="item" ${n.url ? `href="${esc(n.url)}" target="_blank" rel="noopener"` : ""}>` +
+        `<b>${esc(n.subject)}</b>${n.text && n.text !== n.subject ? `<div class="msg">${esc(n.text.slice(0, 280))}</div>` : ""}` +
+        `<div class="sub">${esc(dayName(n.time))} ${tkt(n.time).time}</div></a>`).join("");
+    }
+  } catch (e) {
+    if (e.code === "invalidtoken") { for (const k of ["md_token", "md_user"]) store.set(k, null); show("v-login"); return; }
+    list.innerHTML = `<div class="empty"><div>📡</div>${T.failed}</div>`;
+  }
+}
+
+// ---------- start ----------
+if (qs.get("signout") === "1") for (const k of ["md_token", "md_user", "md_notify"]) store.set(k, null);
+if (qs.get("connected") === "1") store.set("md_notify", "1");
+if (store.get("md_token") && store.get("md_user")) dashboard(); else show("v-login");
+</script>
+</body>
+</html>
